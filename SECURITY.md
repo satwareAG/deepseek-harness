@@ -33,6 +33,7 @@ cannot be sent as a patch there.
 | No secrets committed | `.github/workflows/security.yml` | `betterleaks detect --no-git` on every PR |
 | Workflows audited | `.github/workflows/security.yml` | `zizmor` |
 | No internal paths or hosts in a public repo | `scripts/satware/check-privacy-leaks.mjs` | privacy job on every PR |
+| `satware/main` is PR-only; no force pushes, no deletion | three repo-level rulesets (`docs/fork.md` "Protection") | 2026-10-30 negative tests: force-push, delete and merge-without-checks all rejected |
 | Build provenance | `.github/workflows/release-cli.yml` | `gh attestation verify <binary> -R satwareAG/deepseek-harness` |
 | Telemetry off | `DSH_TELEMETRY_DISABLED=1` in every workflow | egress test (see `docs/fork.md`) |
 
