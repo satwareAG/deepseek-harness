@@ -89,6 +89,19 @@ Every override is listed with its advisory range and rationale in
 lands, re-run `pnpm audit` before merging: an override that upstream has since
 fixed should be removed rather than carried.
 
+## Verification evidence
+
+Every gate in this fork has a negative control, so a green run means the gate
+can fail:
+
+| Gate | Control | Result |
+|---|---|---|
+| `pnpm audit` | 72 advisories on the untouched lock | 0 after the overrides |
+| extract-zip patch | patch reverted in `node_modules`, spec re-run | 2 of 4 cases fail (the two escape cases) |
+| privacy gate | planted a tracked file containing an operator home path | 1 finding, exit 1; clean after removal |
+| betterleaks allowlist | `scripts/satware/betterleaks-canary.sh` plants a runtime-generated credential outside the allowlisted paths | reported; the canary script itself is not |
+| telemetry egress | listener sanity request before the count resets; endpoint string must exist in the binary | 0 requests from a boot with `DSH_TELEMETRY_DISABLED=1` |
+
 ## Telemetry
 
 `dsh` ships an OTLP/HTTP exporter (`packages/host/product-telemetry-otel`,
