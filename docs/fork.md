@@ -42,6 +42,21 @@ them: `scripts/ci-workflow.spec.ts`, `scripts/ci-compatible-selfhosted.spec.ts`,
 `scripts/preview-workflow.spec.ts`, `apps/desktop/tests/desktop-publish-route.spec.ts`,
 `apps/desktop/tests/desktop-package-selection.spec.ts`.
 
+## Known flaky tests
+
+The suite is upstream's and is not fully deterministic on hosted runners. Two
+integration tests flake at roughly 1 run in 3, both timing-sensitive and both
+unrelated to the fork delta:
+
+| Test | Symptom |
+|---|---|
+| `packages/shell/tool-pwsh-persistent/tests/loader-composition.spec.ts` | PTY output exceeds the terminal scrollback budget, so the first line of a response is dropped |
+| `packages/experimental/tool-ralph/tests/integration.spec.ts` ("reports the failed round and last good handoff when a child fails") | real-spawn + sandboxed PTC stack race |
+
+`ci.yml` runs `vitest run --retry=1` for that reason: a single retry separates
+flake from regression, and a real failure fails twice. Do not add these to a
+skip list - they exercise the persistent-shell and sandbox paths that matter.
+
 ## Rebase cost (measured, not asserted)
 
 `scripts/satware/sync-upstream.sh --check <ref>` performs a throwaway merge and

@@ -52,4 +52,8 @@ jobs:
         run: pnpm run lint
 
       - name: Test
-        run: pnpm test
+        # One retry: two integration tests are timing-sensitive on hosted
+        # runners (tool-pwsh-persistent PTY scrollback, tool-ralph real-spawn
+        # sandbox stack) and flake ~1 run in 3. A single retry separates flake
+        # from regression; a real failure fails twice.
+        run: pnpm run build:native-system && pnpm exec vitest run --retry=1
