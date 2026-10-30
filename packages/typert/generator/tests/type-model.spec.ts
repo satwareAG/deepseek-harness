@@ -1409,7 +1409,9 @@ describe('TypeGraphRenderer', { timeout: 60_000 }, () => {
         noEmit: true,
         skipLibCheck: false,
         target: ts.ScriptTarget.ES2024,
-        lib: ['lib.es2024.d.ts'],
+        // zod >= 4.6 references the URL global in its emitted types, so the
+        // consumer program needs the DOM lib alongside ES2024 (satware fork).
+        lib: ['lib.es2024.d.ts', 'lib.dom.d.ts'],
         types: [],
         module: ts.ModuleKind.ESNext,
         moduleResolution: ts.ModuleResolutionKind.Bundler,
@@ -1721,7 +1723,9 @@ describe('FaceModelEmitter', { timeout: 60_000 }, () => {
         noEmit: true,
         skipLibCheck: false,
         target: ts.ScriptTarget.ES2024,
-        lib: ['lib.es2024.d.ts'],
+        // zod >= 4.6 references the URL global in its emitted types, so the
+        // consumer program needs the DOM lib alongside ES2024 (satware fork).
+        lib: ['lib.es2024.d.ts', 'lib.dom.d.ts'],
         types: [],
         module: ts.ModuleKind.ESNext,
         moduleResolution: ts.ModuleResolutionKind.Bundler,

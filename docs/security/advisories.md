@@ -75,6 +75,24 @@ $ npx vitest run scripts/extract-zip-symlink-guard.spec.ts
 Tests  4 passed (4)
 ```
 
+## Knock-on changes the overrides required
+
+An override is not free - three upstream tests asserted on the exact
+dependency graph and had to move with it:
+
+| Change | Why |
+|---|---|
+| `THIRD_PARTY_NOTICES.md` regenerated | `pnpm run gen-third-party-notices` reads the resolved graph; the notices now list `extract-zip@2.0.1` as a patched package |
+| `apps/desktop/scripts/runtime-patch-policy.ts` classifies `extract-zip@2.0.1` as `workspace-only` | the desktop runtime prep refuses any unclassified workspace patch; extraction happens in build-host scripts, never in the shipped runtime |
+| `apps/desktop/tests/prepare-runtime-patches.spec.ts` expects 7 workspace-only patches | 6 upstream + extract-zip |
+| `packages/typert/generator/tests/type-model.spec.ts` adds `lib.dom.d.ts` | zod >= 4.6 references the `URL` global in its emitted types |
+
+**Licence note:** `@modelcontextprotocol/client` 2.2.0 is MIT, 2.3.0 is
+Apache-2.0. The override crosses that boundary; `THIRD_PARTY_NOTICES.md` now
+records Apache-2.0 and the upstream `LICENSE`/`NOTICE` obligations apply. This
+is compatible with redistributing the fork under MIT, but it is a real
+difference from the upstream tree and is called out here rather than buried.
+
 ## Deliberate non-goals
 
 - **Major jumps were avoided where a same-major fix existed.** `happy-dom`

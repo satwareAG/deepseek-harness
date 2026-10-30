@@ -27,12 +27,9 @@ const PROBE_KEY = `process.env.${PROBE_NAME}`
 const originalProbe = process.env[PROBE_NAME]
 const roots: string[] = []
 const dshBuildWorkflows = [
-  'build-exe-for-python-sdk.yml',
   'ci.yml',
-  'e2e.yml',
-  'release.yml',
-  'release-publish.yml',
-  'sandbox.yml',
+  'release-cli.yml',
+  'security.yml',
 ]
 
 afterEach(() => {
