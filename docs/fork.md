@@ -57,6 +57,13 @@ unrelated to the fork delta:
 flake from regression, and a real failure fails twice. Do not add these to a
 skip list - they exercise the persistent-shell and sandbox paths that matter.
 
+Because roughly one run in two ends red on a *different* test each time, the
+suite is a separate **advisory** job: `ci.yml` blocks on the deterministic
+gate (install, typecheck, lint, build, the fork's own specs) and reports the
+full suite without blocking. Upstream never ran this suite in its own public
+CI, so there is no upstream baseline to compare against; a red advisory run
+needs a human look at which test failed, not a blocked merge.
+
 ## Rebase cost (measured, not asserted)
 
 `scripts/satware/sync-upstream.sh --check <ref>` performs a throwaway merge and
