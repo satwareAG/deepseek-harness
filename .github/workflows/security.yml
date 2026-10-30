@@ -58,10 +58,14 @@ jobs:
           curl -fsSL "$url" -o /tmp/betterleaks.tar.gz
           echo "${BETTERLEAKS_SHA256}  /tmp/betterleaks.tar.gz" | sha256sum -c -
           tar -xzf /tmp/betterleaks.tar.gz -C /tmp betterleaks
-          install -m 0755 /tmp/betterleaks "$HOME/.local/bin/betterleaks"
+          sudo install -m 0755 /tmp/betterleaks /usr/local/bin/betterleaks
           betterleaks version
+      - name: Config sanity
+        run: betterleaks config check
       - name: Scan working tree
         run: betterleaks detect --no-git --redact --source .
+      - name: Allowlist canary
+        run: bash scripts/satware/betterleaks-canary.sh
 
   workflows:
     name: Workflow audit (zizmor)

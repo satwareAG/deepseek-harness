@@ -1,0 +1,34 @@
+# Secret-scanning configuration for the satwareAG fork.
+#
+# `useDefault` is mandatory: betterleaks treats a config without rules as
+# "scan nothing" (blind-gate incident, see the satware harness security skill).
+#
+# The allowlist below is a path allowlist for *known false-positive classes* in
+# the upstream tree, not a blanket exemption:
+#   - test fixtures carry placeholder credentials by design (2932 files),
+#   - `*.i18n.yaml` holds git blob hashes for translation pairing (40-hex
+#     values that generic-api-key reads as keys),
+#   - `locales.ts` contains the word "password" in nine languages,
+#   - the ui-secret-mask README documents example credentials,
+#   - build output (dist/lib/runtime staging) is not committed.
+# Every entry is justified in docs/security/advisories.md, and
+# scripts/satware/betterleaks-canary.sh proves the gate still reports a real
+# secret planted outside these paths.
+[extend]
+useDefault = true
+
+[allowlist]
+description = 'Upstream false-positive classes (documented in docs/security/advisories.md)'
+paths = [
+  '''(^|/)tests?/''',
+  '''(^|/)__tests__/''',
+  '''\.spec\.(ts|tsx|mjs|js)$''',
+  '''\.e2e\.ts$''',
+  '''\.i18n\.yaml$''',
+  '''locales\.(ts|js)$''',
+  '''^packages/client/ui-secret-mask/README''',
+  '''(^|/)(dist|dist-exe|node_modules|coverage)/''',
+  '''^packages/[^/]+/[^/]+/lib/''',
+  '''^apps/web/dist/''',
+  '''^python/sdk-runtime/src/deepseek_harness_runtime/runtime/''',
+]
