@@ -42,6 +42,28 @@ them: `scripts/ci-workflow.spec.ts`, `scripts/ci-compatible-selfhosted.spec.ts`,
 `scripts/preview-workflow.spec.ts`, `apps/desktop/tests/desktop-publish-route.spec.ts`,
 `apps/desktop/tests/desktop-package-selection.spec.ts`.
 
+## Rebase cost (measured, not asserted)
+
+`scripts/satware/sync-upstream.sh --check <ref>` performs a throwaway merge and
+reports the conflict surface. Measured 2026-10-30 against `upstream/master`
+(2508 commits and 7975 files ahead of the `dsh-v0.2.1-rc.5` base):
+
+```
+$ scripts/satware/sync-upstream.sh --check upstream/master
+26 conflict(s): 19 modify/delete (take the deletion), 7 content
+  CONFLICT (content): .github/workflows/ci.yml
+  CONFLICT (content): THIRD_PARTY_NOTICES.md
+  CONFLICT (content): apps/desktop/scripts/runtime-patch-policy.ts
+  CONFLICT (content): apps/desktop/tests/prepare-runtime-patches.spec.ts
+  CONFLICT (content): pnpm-lock.yaml
+  CONFLICT (content): pnpm-workspace.yaml
+  CONFLICT (content): scripts/client-build-environment.client.spec.ts
+```
+
+That is the whole weekly cost: 19 deletions to re-assert and 7 content
+resolutions, every one of them inside the five areas above. No conflict ever
+lands in upstream product code, which is what keeps the rebase cheap.
+
 ## Sync procedure (weekly, or on a security trigger)
 
 ```bash

@@ -24,6 +24,26 @@ printf '== current base: %s\n' "$base"
 printf '== newest upstream releases\n'
 git tag --list 'dsh-v*' --sort=-v:refname | head -5 | sed 's/^/   /'
 
+if [ "${1:-}" = "--check" ]; then
+    ref="${2:-upstream/master}"
+    printf '\n== trial merge of %s (nothing is committed)\n' "$ref"
+    git switch -q -c "sync/check-$$" satware/main || exit 1
+    if git merge --no-commit --no-ff "$ref" >/tmp/satware-sync-check.$$ 2>&1; then
+        printf '   clean merge - no conflicts\n'
+    else
+        total="$(grep -cE '^CONFLICT' /tmp/satware-sync-check.$$ || true)"
+        modify_delete="$(grep -cE '^CONFLICT \(modify/delete\)' /tmp/satware-sync-check.$$ || true)"
+        printf '   %s conflict(s): %s modify/delete (take the deletion), %s content\n' \
+            "$total" "$modify_delete" "$((total - modify_delete))"
+        grep -E '^CONFLICT \(content\)' /tmp/satware-sync-check.$$ | sed 's/^/     /'
+    fi
+    rm -f /tmp/satware-sync-check.$$
+    git merge --abort 2>/dev/null
+    git switch -q satware/main
+    git branch -D "sync/check-$$" >/dev/null 2>&1
+    exit 0
+fi
+
 if [ "${1:-}" != "--merge" ]; then
     printf '\n== delta since %s\n' "$base"
     git diff --stat "$base"..HEAD -- . ':!.github' | tail -12
