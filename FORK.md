@@ -20,15 +20,15 @@ in the open because the hardening work is useful to anyone running `dsh`.
 ## What this fork changes
 
 Only what is needed to ship a hardened `dsh` CLI internally. The delta is kept
-to five touch points so a weekly upstream rebase stays cheap:
+to five areas so a weekly upstream rebase stays cheap:
 
-| Touch point | What lives there |
+| Area | What lives there |
 |---|---|
-| `pnpm-workspace.yaml` | `overrides` for the advisory set, `auditConfig.ignoreGhsas` for the one package we patch locally |
-| `patches/extract-zip@2.0.1.patch` | symlink-escape fix (no upstream release exists) |
-| `.github/workflows/` | three owned workflows: `ci.yml`, `security.yml`, `release-cli.yml` |
-| `scripts/satware/`, `scripts/extract-zip-symlink-guard.spec.ts`, `.privacy-whitelist` | privacy gate, release preflight, patch regression test |
-| `FORK.md`, `SECURITY.md`, `docs/fork.md`, `docs/security/` | this notice, disclosure policy, maintenance contract, advisory record |
+| **Dependency** | `pnpm-workspace.yaml` (`overrides`, `auditConfig.ignoreGhsas`), `patches/extract-zip@2.0.1.patch` |
+| **CI** | `.github/workflows/` - three owned workflows: `ci.yml`, `security.yml`, `release-cli.yml` |
+| **Gates** | `scripts/satware/` (privacy, secret canary, telemetry egress, sync, pre-pr), `scripts/extract-zip-symlink-guard.spec.ts`, `.privacy-whitelist`, `.betterleaks.toml`, `.gitattributes` (patch-file whitespace) |
+| **Docs** | `FORK.md`, `SECURITY.md`, `docs/fork.md`, `docs/security/` |
+| **Upstream** | 25 workflow files and 9 specs that only asserted the removed workflows are deleted, not rewritten |
 
 Everything else is upstream, unmodified.
 

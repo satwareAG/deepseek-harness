@@ -62,19 +62,25 @@ A security-triggered sync (new advisory against a pinned dependency) follows
 the same path but merges `upstream/master` instead of a tag, and only carries
 the advisory fix.
 
-## The delta (five touch points)
+## The delta (five areas)
 
-1. **`pnpm-workspace.yaml`** — `overrides` (advisory remediation),
-   `auditConfig.ignoreGhsas` (the extract-zip suppression), `patchedDependencies`
-   (the extract-zip patch). Upstream also keeps overrides and patches here, so
-   conflicts are line-level and expected.
-2. **`patches/extract-zip@2.0.1.patch`** — standalone file, no conflict unless
-   upstream starts patching extract-zip itself.
-3. **`.github/workflows/`** — ours replace theirs wholesale. Upstream edits to
-   deleted workflow files surface as modify/delete conflicts: take the deletion.
-4. **`scripts/satware/`, `scripts/extract-zip-symlink-guard.spec.ts`, `.privacy-whitelist`** —
-   new paths, no upstream counterpart.
-5. **`FORK.md`, `SECURITY.md`, `docs/fork.md`, `docs/security/`** — new paths.
+1. **Dependency layer** — `pnpm-workspace.yaml` (`overrides`,
+   `auditConfig.ignoreGhsas`, `patchedDependencies`) and
+   `patches/extract-zip@2.0.1.patch`. Upstream also keeps overrides and patches
+   there, so conflicts are line-level and expected.
+2. **CI layer** — `.github/workflows/` (ours replace theirs wholesale). Upstream
+   edits to deleted workflow files surface as modify/delete conflicts: take the
+   deletion.
+3. **Gate layer** — `scripts/satware/` (`check-privacy-leaks.mjs`,
+   `betterleaks-canary.sh`, `check-telemetry-egress.sh`, `sync-upstream.sh`,
+   `pre-pr.sh`), `scripts/extract-zip-symlink-guard.spec.ts`,
+   `.privacy-whitelist`, `.betterleaks.toml`, and the `.gitattributes`
+   patch-file whitespace exemption. New paths, no upstream counterpart.
+4. **Docs layer** — `FORK.md`, `SECURITY.md`, `docs/fork.md`, `docs/security/`.
+   New paths.
+5. **Removals** — 25 upstream workflows and 9 specs that only asserted their
+   shape. Not rewritten, deleted: re-adding them would re-introduce the
+   unresolvable cross-org action and the publish/E2E lanes.
 
 ## Advisory remediation
 
@@ -85,14 +91,22 @@ fixed should be removed rather than carried.
 
 ## Telemetry
 
-`dsh` ships an OTLP/HTTP product-telemetry exporter
-(`packages/host/product-telemetry-otel`) and a Desktop analytics consumer.
-Every workflow sets `DSH_TELEMETRY_DISABLED=1`, and release builds must be
-proven not to emit. The egress proof is a runtime check against the built
-binary (a network-namespaced run with a deny-all policy plus a capture of any
-outbound connection attempt); it is run manually before a release tag and its
-result recorded in the release notes. This paragraph is the contract; the
-automated harness for it is tracked as follow-up work, not claimed as done.
+`dsh` ships an OTLP/HTTP exporter (`packages/host/product-telemetry-otel`,
+endpoint `dsh-otel-collector.deepseeksvc.com`) plus a Desktop analytics
+consumer. Two independent facts keep it off for us:
+
+1. **Design.** The only session-export mode is `FEEDBACK_ONLY`: a Session-log
+   prefix is released only after explicit user feedback. `DSH_TELEMETRY_MODE`
+   has exactly two values (`FEEDBACK_ONLY`, `DISABLED`) - there is no
+   "always export" mode.
+2. **Runtime proof.** `scripts/satware/check-telemetry-egress.sh` boots the
+   built binary with `DSH_TELEMETRY_DISABLED=1` against a local OTLP listener
+   and requires zero requests. It is not vacuous: the script first asserts the
+   production endpoint string is compiled into the binary, then sanity-checks
+   the listener with a direct request before resetting the counter.
+
+Every workflow sets `DSH_TELEMETRY_DISABLED=1`, and the release lane runs the
+egress proof before it attests the artifact.
 
 ## Versioning
 
