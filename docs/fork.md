@@ -66,6 +66,12 @@ lands in upstream product code, which is what keeps the rebase cheap.
 
 ## Sync procedure (weekly, or on a security trigger)
 
+Base choice note: upstream marks every release `prerelease: true`, so GitHub
+exposes no "latest" release (`/releases/latest` is 404). The base is therefore
+the newest release **by publish date**, `dsh-v0.2.1-rc.5` (2026-10-30), not the
+semver-higher `dsh-v0.2.2-alpha.2` (2026-10-28). Re-check both signals before
+every sync: a newer publish date wins over a higher prerelease number.
+
 ```bash
 git fetch upstream --tags
 git tag --list 'dsh-v*' --sort=-v:refname | head -5   # newest upstream release
