@@ -87,6 +87,36 @@ That is the whole weekly cost: 19 deletions to re-assert and 7 content
 resolutions, every one of them inside the five areas above. No conflict ever
 lands in upstream product code, which is what keeps the rebase cheap.
 
+## Protection
+
+`satware/main` is protected by a repository-level ruleset (the GitHub Rules
+API, managed via API/UI, not a file in the repo). Two more rulesets cover
+`master` and the sync branches.
+
+| Ruleset | Target | Rules |
+|---|---|---|
+| `satware-main` | `refs/heads/satware/main` | no force pushes; no deletion; required status checks (CI `Gate (typecheck, lint, build, fork specs)` plus the four Security jobs `Dependency advisories`, `Secret scan (betterleaks)`, `Workflow audit (zizmor)`, `Privacy gate`) with the strict up-to-date policy; 0 required reviews; no bypass actors |
+| `master-mirror` | `refs/heads/master` | no force pushes; no deletion; both bypassable by organization admins (restoring the mirror may require it) |
+| `sync-branches` | `refs/heads/sync/*` | no force pushes |
+
+Consequences: `satware/main` is **PR-only**. Required status checks apply on
+every ref update, so a direct push of a new commit is rejected and the checks
+must pass on the PR head instead (this is why the sync procedure opens a PR).
+The advisory `Full suite (advisory)` job is deliberately not required: it is
+`continue-on-error` and would never block. `satware-main` has no bypass
+actors, so even a repo admin cannot force-push or delete the default branch.
+
+Negative test (2026-10-30, scratch branch `rs-test` under a scratch ruleset,
+run as an admin to prove the hard-block semantics):
+
+| Attempt | Result |
+|---|---|
+| force-push a rewritten commit | rejected: `GH013 ... Cannot force-push to this branch` |
+| delete the branch | rejected: `push declined due to repository rule violations` |
+| merge a PR whose checks are missing | rejected: `5 of 5 required status checks are expected` |
+
+Inspect: `gh api /repos/satwareAG/deepseek-harness/rulesets`.
+
 ## Sync procedure (weekly, or on a security trigger)
 
 Base choice note: upstream marks every release `prerelease: true`, so GitHub
@@ -105,8 +135,14 @@ pnpm install --no-frozen-lockfile
 pnpm audit --audit-level high          # must stay clean
 pnpm test                              # at minimum scripts/extract-zip-symlink-guard.spec.ts
 node scripts/satware/check-privacy-leaks.mjs
-git switch satware/main && git merge --ff-only sync/upstream-dsh-v<X>
-git tag satware-v<X>+<n> && git push origin satware/main --tags
+git commit -am "sync: upstream dsh-v<X>"
+git push origin sync/upstream-dsh-v<X>
+gh pr create --base satware/main --head sync/upstream-dsh-v<X>
+# the satware-main ruleset requires the five status checks on every ref
+# update of the default branch, so the sync lands as a PR: wait for the
+# gate and security jobs to turn green on the PR head, then
+gh pr merge   # merge commit; this gh has no --ff-only flag
+git tag satware-v<X>+<n> && git push origin --tags
 ```
 
 A security-triggered sync (new advisory against a pinned dependency) follows
@@ -214,4 +250,7 @@ by anyone, not only inside the org.
 `satware-v<upstream-version>+<n>`, where `<n>` increments per fork release on
 the same upstream base (for example `satware-v0.2.1-rc.5+1`). Upstream `dsh-v*`
 tags are never moved or deleted; they are the provenance anchor for
-`gh attestation verify`.
+`gh attestation verify`. This holds for `satware-v*` tags as well: they are
+release triggers and attestation sources, and a redo re-tags under a new
+`+<n>` instead of overwriting. Rulesets cannot protect tags; this is a
+human rule.
