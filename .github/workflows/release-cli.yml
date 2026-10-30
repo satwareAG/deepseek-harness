@@ -64,13 +64,9 @@ jobs:
       - name: Attest build provenance
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
         with:
-          subject-path: 'dist-exe/*'
-
-      - name: Attest SBOM
-        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
-        with:
-          subject-path: 'dist-exe/*'
-          sbom-path: 'dist-exe/SHA256SUMS'
+          subject-path: |
+            dist-exe/*-runtime-*
+            dist-exe/SHA256SUMS
 
       - name: Upload artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
