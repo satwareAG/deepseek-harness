@@ -52,6 +52,7 @@ unrelated to the fork delta:
 |---|---|
 | `packages/shell/tool-pwsh-persistent/tests/loader-composition.spec.ts` | PTY output exceeds the terminal scrollback budget, so the first line of a response is dropped |
 | `packages/experimental/tool-ralph/tests/integration.spec.ts` ("reports the failed round and last good handoff when a child fails") | real-spawn + sandboxed PTC stack race |
+| `packages/test-support/client-runtime/tests/assembly-vitest.client.spec.ts` | counts assembled test clients and sees 3 instead of 2 on the runner; passes locally after a full build, so it depends on build state rather than on the fork delta |
 
 `ci.yml` runs `vitest run --retry=1` for that reason: a single retry separates
 flake from regression, and a real failure fails twice. Do not add these to a
