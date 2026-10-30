@@ -1,0 +1,18 @@
+# Privacy gate whitelist for scripts/satware/check-privacy-leaks.mjs
+#
+# Two entry forms:
+#   path:<regex>   matches the tracked file path
+#   <regex>        matches a single line
+#
+# Every entry needs a reason. The gate is the only thing standing between an
+# internal path and a public repository - do not add a pattern just to make a
+# build green.
+
+# The security contact is intentionally public (SECURITY.md, FORK.md).
+security@satware\.com
+
+# Upstream source comment that documents a file-address example path.
+path:^packages/util/workspace-path/src/file-address\.ts$
+
+# Upstream fixture user for the ssh helper container.
+path:^scripts/verify-ssh-helper-ssh\.ts$

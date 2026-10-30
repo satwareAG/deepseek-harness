@@ -1,0 +1,83 @@
+name: Release CLI
+
+# satware fork: builds the dsh executable we actually ship internally and signs
+# it with public Sigstore provenance. Upstream's release lanes are removed -
+# they publish to the @deepseek-ai npm scope and the public PyPI project, which
+# this fork must never do.
+
+on:
+  push:
+    tags: ['satware-v*']
+  workflow_dispatch:
+    inputs:
+      targets:
+        description: 'pkg targets (comma separated)'
+        required: true
+        default: 'node24-linux-x64'
+
+permissions:
+  contents: read
+
+env:
+  DSH_TELEMETRY_DISABLED: '1'
+
+jobs:
+  build:
+    name: Build and attest
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: write # attach the binary to the release
+      id-token: write # Sigstore signing identity
+      attestations: write # provenance attestation
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@b307475762933b98ed359c036b0e51f26b63b74b # v5.0.0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          # No package-manager cache in a release lane: a poisoned cache would
+          # flow straight into the attested artifact (zizmor cache-poisoning).
+          package-manager-cache: false
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build executables
+        env:
+          TARGETS: ${{ inputs.targets || 'node24-linux-x64' }}
+        run: pnpm exec tsx scripts/build-exe-for-python-sdk.ts --targets="$TARGETS" --build-artifacts
+
+      - name: Checksums
+        run: |
+          set -euo pipefail
+          cd dist-exe
+          sha256sum ./* > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Attest build provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-path: 'dist-exe/*'
+
+      - name: Attest SBOM
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-path: 'dist-exe/*'
+          sbom-path: 'dist-exe/SHA256SUMS'
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dsh-exe-${{ github.ref_name }}
+          path: dist-exe/
+          if-no-files-found: error
+
+      - name: Attach to release
+        if: startsWith(github.ref, 'refs/tags/satware-v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist-exe/* --generate-notes --title "$GITHUB_REF_NAME"

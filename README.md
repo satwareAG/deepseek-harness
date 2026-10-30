@@ -1,5 +1,11 @@
 # DeepSeek Harness
 
+> **satwareAG fork.** This is an unofficial fork of
+> [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness),
+> hardened for internal use at [satware AG](https://satware.com). It is not
+> affiliated with, endorsed by or supported by DeepSeek. See [FORK.md](FORK.md)
+> for the delta and [SECURITY.md](SECURITY.md) for the disclosure policy.
+
 English | [中文](README.zh.md)
 
 DeepSeek Harness (`dsh`) is an open-source agent harness developed by [DeepSeek AI](https://deepseek.com).

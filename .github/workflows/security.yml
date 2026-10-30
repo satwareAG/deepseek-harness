@@ -1,0 +1,89 @@
+name: Security
+
+# satware fork: dependency advisories, secret scanning, workflow audit and the
+# privacy gate that keeps internal paths/hosts out of a public repository.
+
+on:
+  pull_request:
+  push:
+    branches: [satware/main]
+  schedule:
+    - cron: '17 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  advisories:
+    name: Dependency advisories
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@b307475762933b98ed359c036b0e51f26b63b74b # v5.0.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Fails on any advisory at or above the configured level. The only
+      # suppressions are the two extract-zip GHSAs in pnpm-workspace.yaml,
+      # which are tied to patches/extract-zip@2.0.1.patch and covered by
+      # scripts/extract-zip-symlink-guard.spec.ts.
+      - name: pnpm audit
+        run: pnpm audit --audit-level high
+
+  secrets:
+    name: Secret scan (betterleaks)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      BETTERLEAKS_VERSION: '1.9.0'
+      BETTERLEAKS_SHA256: 'f8b185a39ffcece2a1ca82bf3a4e7435cd81963ffd16b7a9128daf75f35f6de7'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install betterleaks (pinned + checksum verified)
+        run: |
+          set -euo pipefail
+          url="https://github.com/betterleaks/betterleaks/releases/download/v${BETTERLEAKS_VERSION}/betterleaks_${BETTERLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -fsSL "$url" -o /tmp/betterleaks.tar.gz
+          echo "${BETTERLEAKS_SHA256}  /tmp/betterleaks.tar.gz" | sha256sum -c -
+          tar -xzf /tmp/betterleaks.tar.gz -C /tmp betterleaks
+          install -m 0755 /tmp/betterleaks "$HOME/.local/bin/betterleaks"
+          betterleaks version
+      - name: Scan working tree
+        run: betterleaks detect --no-git --redact --source .
+
+  workflows:
+    name: Workflow audit (zizmor)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --disable-pip-version-check 'zizmor==1.30.1'
+      - run: zizmor --format plain .github/workflows
+
+  privacy:
+    name: Privacy gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Reject internal paths, hosts and addresses
+        run: node scripts/satware/check-privacy-leaks.mjs

@@ -1,0 +1,38 @@
+diff --git a/index.js b/index.js
+index 23384ea16bb848616886f356d8d69f94325535bf..64a4def5c0e8a7e9b840e80012492cbc49f76a8d 100644
+--- a/index.js
++++ b/index.js
+@@ -87,6 +87,14 @@ class Extractor {
+ 
+     const dest = path.join(this.opts.dir, entry.fileName)
+ 
++    // satware patch (2026-10-30): the destination itself must stay inside the
++    // extraction root, independent of the caller's directory-level check.
++    const rootDir = path.resolve(this.opts.dir)
++    const relDest = path.relative(rootDir, path.resolve(dest))
++    if (path.isAbsolute(relDest) || relDest.split(path.sep).includes('..')) {
++      throw new Error(`Out of bound path "${dest}" found while processing file ${entry.fileName}`)
++    }
++
+     // convert external file attr int into a fs stat mode int
+     const mode = (entry.externalFileAttributes >> 16) & 0xFFFF
+     // check if it's a symlink or dir (using stat mode constants)
+@@ -126,6 +134,18 @@ class Extractor {
+ 
+     if (symlink) {
+       const link = await getStream(readStream)
++      // satware patch (2026-10-30): reject symlink targets that resolve outside
++      // the extraction root. Without this, a crafted archive can create a link
++      // to an absolute path or a `..` escape and have a later entry write
++      // through it - the "arbitrary file write through symlink archive entries"
++      // and "unvalidated symlink path traversal" advisories, which have no
++      // upstream fix as of extract-zip 2.0.1 (the latest release).
++      const root = path.resolve(this.opts.dir)
++      const resolvedLink = path.resolve(path.dirname(dest), link)
++      const relLink = path.relative(root, resolvedLink)
++      if (path.isAbsolute(relLink) || relLink.split(path.sep).includes('..')) {
++        throw new Error(`Out of bound symlink target "${link}" found while processing file ${entry.fileName}`)
++      }
+       debug('creating symlink', link, dest)
+       await fs.symlink(link, dest)
+     } else {

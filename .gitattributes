@@ -8,6 +8,10 @@
 
 *.pdf binary
 
+# Unified-diff context lines are a single space by definition, so the
+# whitespace gate (git diff --check) must not flag patch files.
+patches/*.patch -whitespace
+
 # The persistence catalog is the readable projection of these generated schemas.
 docs/persistence-schema.json linguist-generated=true
 docs/persistence-changes/*.schema.json linguist-generated=true
