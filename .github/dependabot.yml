@@ -1,41 +1,27 @@
 version: 2
 
+# satware fork: the inherited config carried three lanes (npm, uv,
+# github-actions) with labels that do not exist in this repository
+# (kind/dependency, area/infra), so every scheduled lane that reached
+# PR creation failed.
+#
+# The npm and uv lanes are deleted: the pnpm override pins in
+# pnpm-workspace.yaml are the advisory-remediation surface, and a
+# dependabot lane only touches manifests and lock files, not the
+# overrides, so it would churn a fork-delta file and collide with the
+# weekly upstream sync. Advisory detection instead runs in the Security
+# workflow (pnpm audit) and as a step in scripts/satware/sync-upstream.sh.
+#
+# The github-actions lane is kept: it proposes new SHAs for the pinned
+# actions in the three owned workflows; each PR is verified with zizmor
+# and the Security gate before it can merge.
+#
+# No labels: with a single lane a label is pure management overhead, and
+# dangling labels are exactly what broke the inherited config.
 updates:
-  - package-ecosystem: "npm"
-    directory: "/"
-    exclude-paths:
-      # Vendored Cordis sources follow vendor/README.md instead of registry updates.
-      - "vendor/**"
-    schedule:
-      interval: "cron"
-      cronjob: "0 4 * * *"
-      timezone: "Asia/Shanghai"
-    cooldown:
-      default-days: 30
-    labels:
-      - "kind/dependency"
-      - "area/infra"
-
-  - package-ecosystem: "uv"
-    directory: "/python/sdk"
-    schedule:
-      interval: "cron"
-      cronjob: "0 4 * * *"
-      timezone: "Asia/Shanghai"
-    cooldown:
-      default-days: 30
-    labels:
-      - "kind/dependency"
-      - "area/infra"
-
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "cron"
       cronjob: "0 4 * * *"
       timezone: "Asia/Shanghai"
-    cooldown:
-      default-days: 30
-    labels:
-      - "kind/dependency"
-      - "area/infra"
