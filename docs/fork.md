@@ -174,10 +174,19 @@ egress proof before it attests the artifact.
 
 ## Release verification
 
-First release: `satware-v0.2.1-rc.5+1` at commit `28631c1`, built, gated and
-signed by `.github/workflows/release-cli.yml` (run `41013478407`). The job ran
-build → telemetry egress proof → checksums → attestation → upload → release
-attachment, all green.
+Every `satware-v*` tag runs `.github/workflows/release-cli.yml`, which does
+build → telemetry egress proof → checksums → Sigstore attestation → upload →
+release attachment. All steps are required; the release object is created only
+after the artifact is attested.
+
+| Tag | Commit | Run | Result |
+|---|---|---|---|
+| `satware-v0.2.1-rc.5+1` | `28631c1` | `41013478407` | success (first attested build) |
+| `satware-v0.2.1-rc.5+2` | `3f1277d` | `41062891187` | success; current head, CI gate + Security green on the same commit |
+
+A release tag may lag `satware/main` by docs-only commits; the tag always names
+the exact commit whose bytes were built and signed, which is what
+`gh attestation verify` reports back.
 
 ```
 $ gh release download satware-v0.2.1-rc.5+1 -R satwareAG/deepseek-harness
