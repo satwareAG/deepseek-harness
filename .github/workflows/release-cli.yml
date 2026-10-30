@@ -51,6 +51,9 @@ jobs:
           TARGETS: ${{ inputs.targets || 'node24-linux-x64' }}
         run: pnpm exec tsx scripts/build-exe-for-python-sdk.ts --targets="$TARGETS" --build-artifacts
 
+      - name: Telemetry egress proof
+        run: bash scripts/satware/check-telemetry-egress.sh "dist-exe/$(ls dist-exe | grep -v rg | grep -v '^linux-x64$' | head -1)"
+
       - name: Checksums
         run: |
           set -euo pipefail

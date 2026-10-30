@@ -27,6 +27,11 @@ step "privacy gate" node scripts/satware/check-privacy-leaks.mjs
 step "dependency advisories" pnpm audit --audit-level high
 step "extract-zip patch guard" npx vitest run scripts/extract-zip-symlink-guard.spec.ts
 
+# Only meaningful once a binary has been built; skipped otherwise.
+if [ -x dist-exe/deepseek-harness-sdk-runtime-linux-x64 ]; then
+    step "telemetry egress" bash scripts/satware/check-telemetry-egress.sh
+fi
+
 if [ "$FULL" -eq 1 ]; then
     step "typecheck" pnpm run typecheck
     step "lint" pnpm run lint
