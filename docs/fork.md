@@ -121,6 +121,34 @@ consumer. Two independent facts keep it off for us:
 Every workflow sets `DSH_TELEMETRY_DISABLED=1`, and the release lane runs the
 egress proof before it attests the artifact.
 
+## Release verification
+
+First release: `satware-v0.2.1-rc.5+1` at commit `28631c1`, built, gated and
+signed by `.github/workflows/release-cli.yml` (run `41013478407`). The job ran
+build → telemetry egress proof → checksums → attestation → upload → release
+attachment, all green.
+
+```
+$ gh release download satware-v0.2.1-rc.5+1 -R satwareAG/deepseek-harness
+$ sha256sum -c SHA256SUMS
+./deepseek-harness-sdk-runtime-linux-x64-rg: OK
+./deepseek-harness-sdk-runtime-linux-x64: OK
+
+$ gh attestation verify deepseek-harness-sdk-runtime-linux-x64 -R satwareAG/deepseek-harness
+commit=28631c1 ref=refs/tags/satware-v0.2.1-rc.5+1 run=41013478407
+issuer: https://token.actions.githubusercontent.com
+san:    https://github.com/satwareAG/deepseek-harness/.github/workflows/release-cli.yml@refs/tags/satware-v0.2.1-rc.5+1
+tlog:   rekor.sigstore.dev (public transparency log)
+
+$ ./deepseek-harness-sdk-runtime-linux-x64 --version
+0.2.1-rc.5
+```
+
+The attested subject set is `SHA256SUMS` plus both executables, and the
+provenance predicate is SLSA v1 (`https://slsa.dev/provenance/v1`) with
+`sourceRepositoryVisibilityAtSigning: public` - so the artifact is verifiable
+by anyone, not only inside the org.
+
 ## Versioning
 
 `satware-v<upstream-version>+<n>`, where `<n>` increments per fork release on
