@@ -80,4 +80,13 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/satware-v')
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" dist-exe/* --generate-notes --title "$GITHUB_REF_NAME"
+        run: |
+          set -euo pipefail
+          # Files only: the build also emits a resource directory, and a rerun
+          # may find the release object already created by a previous attempt.
+          assets=(dist-exe/*-runtime-* dist-exe/SHA256SUMS)
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "${assets[@]}" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" "${assets[@]}" --generate-notes --title "$GITHUB_REF_NAME"
+          fi
