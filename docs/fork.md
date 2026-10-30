@@ -141,7 +141,7 @@ gh pr create --base satware/main --head sync/upstream-dsh-v<X>
 # the satware-main ruleset requires the five status checks on every ref
 # update of the default branch, so the sync lands as a PR: wait for the
 # gate and security jobs to turn green on the PR head, then
-gh pr merge --ff-only
+gh pr merge   # merge commit; this gh has no --ff-only flag
 git tag satware-v<X>+<n> && git push origin --tags
 ```
 
